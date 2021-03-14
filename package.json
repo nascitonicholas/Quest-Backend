@@ -1,0 +1,21 @@
+{
+  "name": "Quest-Backend",
+  "version": "1.0.0",
+  "description": "Repositório para o trabalho de Engenharia de Software. Objetivo criação de uma versão similar ao jogo Quest de tabuleiro.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nascitonicholas/Quest-Backend.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/nascitonicholas/Quest-Backend/issues"
+  },
+  "homepage": "https://github.com/nascitonicholas/Quest-Backend#readme"
+}
