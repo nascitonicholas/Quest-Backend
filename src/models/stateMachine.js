@@ -1,8 +1,5 @@
+class StateMachine {
 
-class GameStateMachine {
-
-    getRoomsAvailable(){
-    }
 }
 
-module.exports = new GameStateMachine
+module.exports = new StateMachine

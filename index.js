@@ -1,5 +1,5 @@
 const { ETIMEDOUT } = require('constants');
-//const e = require('cors');
+//const cors = require('cors');
 const app = require('express')();
 const http = require('http').Server(app);
 const { v4: uuidv4 } = require('uuid');
@@ -82,22 +82,40 @@ function postCreateRoom(body) {
     roomId: "room-" + uuidv4(),
     roomName: roomName,
     players: [player],
-    maxPlayers: maxPlayer
+    maxPlayers: maxPlayer,
+    socketUp: false
   }
 
   rooms.push(room);
   return room;
 }
 
-function postJoinRoom(roomId, playerId) {
-  var player; //procurar no arrays de players
-  var room; //procurar sala
+function postJoinRoom(body) {
+  var player = findPlayerById(body.playerId);
+  var room = findRoomById(body.roomId);
   
-  // lock
+  // TODO: buscar forma de dar um lock no array - single thread
+  ----------->continuar daqui
   if (room.maxPlayers > room.players.length)
     room.players.push(player)
   else return 503;
 
+  return room;
+}
+
+function findPlayerById(playerId) {
+  var player = players.find(x => x.playerId == playerId);
+  if(!player){
+    return //TODO: retornar erro - jogador nao encontrado 
+  }
+  return player;
+}
+
+function findRoomById(roomId) {
+  var room = rooms.find(x => x.roomId == roomId);
+  if(!room){
+    return //TODO: retornar erro - sala nao encontrada 
+  }
   return room;
 }
 
@@ -110,6 +128,8 @@ io.on('connection', (socket) => {
  
   socket.on('create-room', (roomId) => {
     socket.join(roomId);
+    rooms.find(x => x.socketIn = true);
+
   })
 
   socket.on('join-room', (roomId) => {
