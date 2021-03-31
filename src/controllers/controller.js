@@ -1,8 +1,8 @@
-const GameStateMachine = require('../models/stateMachine')
-
-module.exports = app => {
-  // async teste (request, response) {
-  //   return response.json("Versão 1.0.0");
-  // }
-  
+function Controller(app) {
+  this.createPlayer = (req, res) =>
+    app.post('/create-player', (req, res) => {
+      send(postCreatePlayer(req.body));
+      res.status(201).end();
+    });
 }
+module.exports = Controller;
