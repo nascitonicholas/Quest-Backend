@@ -37,8 +37,9 @@ app.post('/create-room', (req, res) => {
 
 var rooms = [];
 var players = [];
-const QUESTION_INITIAL_TIMER_VALUE = 10; //ajustar se necessario e converter para time
-const BET_INITIAL_TIMER_VALUE = 5;  
+const QUESTION_INITIAL_TIMER_VALUE = 10; //ajustar se necessario
+const BET_INITIAL_TIMER_VALUE = 5;
+const NUMBER_OF_ROUNDS = 5  //Total de rounds por partida - ajustas conforme regra de negocio
 
 function postCreatePlayer(body) {
   var player = {
@@ -91,6 +92,22 @@ function findRoomById(roomId) {
   return room;
 }
 
+function timer(timerValue) {
+  var timer = setInterval(function(){
+    
+    if(timerValue <= 0){
+      clearInterval(timer);
+    }
+    
+    returnTimerValue(timerValue--);
+  }, 1000)
+}
+
+function returnTimerValue(timerValue) {
+
+  
+}
+
 
 //Eventos Socket
 io.on('connection', (socket) => {
@@ -133,7 +150,7 @@ io.on('connection', (socket) => {
     var room = findRoomById(roomId);
     room.players.forEach(player => {
       
-      if(player.coins === 0 || room.round > 5){ //Total de rounds por partida - ajustas conforme regra de negocio
+      if(player.coins === 0 || room.round > NUMBER_OF_ROUNDS){ 
         io.to(roomId).emit('game-over', room);
       }
       io.to(roomId).emit('ok', room);
@@ -141,8 +158,8 @@ io.on('connection', (socket) => {
   });
 
   socket.on('new-question', (roomId, categoryId) => {
+    StateMachine.setQuestionTimer(QUESTION_INITIAL_TIMER_VALUE);
     var room = findRoomById(roomId);
-
     room.question = Question.getOne(room, categoryId);
     room.answer = "";
 
@@ -150,7 +167,13 @@ io.on('connection', (socket) => {
   });
 
   socket.on('bet-timer', (roomId) => {
-    io.to(roomId).emit('timer-running')//chamar um cronometro e emitir esse evento a cada segundo atualizando o front
+    var couter = BET_INITIAL_TIMER_VALUE; 
+    var timer = setInterval(function(){
+      if(couter <= 0){
+        clearInterval(timer);
+      }
+      io.to(roomId).emit('timer-running', couter--);
+    }, 1000)   
   });
 
   socket.on('bet', (roomId, bet, upvote) => {
@@ -159,19 +182,27 @@ io.on('connection', (socket) => {
   });
 
   socket.on('question-timer', (roomId) => {
-    io.to(roomId).emit('timer-running')//chamar um cronometro e emitir esse evento a cada segundo atualizando o front
+    var couter = QUESTION_INITIAL_TIMER_VALUE; 
+    var timer = setInterval(function(){
+      if(couter <= 0 || StateMachine.answered){//acesso direto ao atributo?
+        clearInterval(timer);
+      }
+      couter--;
+      StateMachine.setQuestionTimer(couter);
+      io.to(roomId).emit('timer-running', couter);
+    }, 1000)
   });
 
   socket.on('answer', (roomId, questionId, answer, timer) => {
     var room = findRoomById(roomId);
     var question = Question.findById(questionId, room.question.category);
-    io.to(roomId).emit('round-results', StateMachine.getResults(room, question, answer, timer))
+    io.to(roomId).emit('round-results', StateMachine.getResults(room, question, answer))
   });
 
   socket.on('time-over', (roomId) => {
     var room = findRoomById(roomId, questionId);
     var question = Question.findById(questionId, room.question.category);
-    io.to(roomId).emit('round-results', StateMachine.getResults(room, question, 0, 0, QUESTION_INITIAL_TIMER_VALUE))
+    io.to(roomId).emit('round-results', StateMachine.getResults(room, question, 0, QUESTION_INITIAL_TIMER_VALUE))
   });
 
 })
