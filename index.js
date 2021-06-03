@@ -22,6 +22,40 @@ http.listen(port, () => {
   console.log(`Socket.IO server running at http://localhost:${port}/`);
 });
 
+const connection = require('./src/config/dataAccess');
+
+// connection.query(
+//   'SELECT * FROM question_cards where que_id=7',
+//   function(err, results, fields) {
+//       console.log(results); // results contains rows returned by server
+//       console.log(fields); // fields contains extra meta data about results, if available
+//   }
+//   );
+
+connection.query(
+  'SELECT * FROM question_cards',
+  function(err, results, fields) {
+      console.log(results); // results contains rows returned by server
+      console.log(fields); // fields contains extra meta data about results, if available
+  }
+  );
+
+const io = require('socket.io')(http, {
+  cors: {
+    origin: frontDomain,
+    methods: ["GET", "POST"]
+  }
+});
+const controller = require('./src/controllers/controller');
+let Controller = new controller(app);
+const StateMachine = (require('./src/models/stateMachine'))();
+const Question = (require('./src/models/question'))();
+
+//TODO: migrar para controller
+http.listen(port, () => {
+  console.log(`Socket.IO server running at http://localhost:${port}/`);
+});
+
 app.post('/create-player', (req, res) => {
   send(postCreatePlayer(req.body));
   res.status(201).end();
@@ -37,8 +71,8 @@ app.post('/create-room', (req, res) => {
 
 var rooms = [];
 var players = [];
-const QUESTION_INITIAL_TIMER_VALUE = 10; //ajustar se necessario
-const BET_INITIAL_TIMER_VALUE = 5;
+const QUESTION_INITIAL_TIMER_VALUE = 10; //ajustar se necessario e converter para time
+const BET_INITIAL_TIMER_VALUE = 5;  
 const NUMBER_OF_ROUNDS = 5  //Total de rounds por partida - ajustas conforme regra de negocio
 
 function postCreatePlayer(body) {
@@ -108,7 +142,6 @@ function returnTimerValue(timerValue) {
   
 }
 
-
 //Eventos Socket
 io.on('connection', (socket) => {
  
@@ -174,6 +207,7 @@ io.on('connection', (socket) => {
       }
       io.to(roomId).emit('timer-running', couter--);
     }, 1000)   
+    io.to(roomId).emit('timer-running')//chamar um cronometro e emitir esse evento a cada segundo atualizando o front
   });
 
   socket.on('bet', (roomId, bet, upvote) => {
@@ -191,12 +225,14 @@ io.on('connection', (socket) => {
       StateMachine.setQuestionTimer(couter);
       io.to(roomId).emit('timer-running', couter);
     }, 1000)
+    io.to(roomId).emit('timer-running')//chamar um cronometro e emitir esse evento a cada segundo atualizando o front
   });
 
   socket.on('answer', (roomId, questionId, answer, timer) => {
     var room = findRoomById(roomId);
     var question = Question.findById(questionId, room.question.category);
-    io.to(roomId).emit('round-results', StateMachine.getResults(room, question, answer))
+    io.to(roomId).emit('round-results', StateMachine.getResults(room, question, answer, timer))
+
   });
 
   socket.on('time-over', (roomId) => {
