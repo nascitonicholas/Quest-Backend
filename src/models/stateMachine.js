@@ -1,8 +1,5 @@
 function StateMachine() {
-        this.start = (numberOfPlayers, rooms) => {
-        console.log(numberOfPlayers, ' + ', rooms)
-    }
-
+    
     this.start = (room) => {
         var stateMachine = {
             actingPlayerId: room.players[0], 
