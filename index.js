@@ -1,6 +1,5 @@
 const { ETIMEDOUT } = require('constants');
 const { mainModule } = require('process');
-//const cors = require('cors');
 const app = require('express')();
 const http = require('http').Server(app);
 const { v4: uuidv4 } = require('uuid');
@@ -12,29 +11,19 @@ const io = require('socket.io')(http, {
     methods: ["GET", "POST"]
   }
 });
-const controller = require('./src/controllers/controller');
-let Controller = new controller(app);
-const StateMachine = (require('./src/models/stateMachine'))();
-const Question = (require('./src/models/question'))();
+const stateMachine = new (require('./src/models/stateMachine'))();
+const question = new (require('./src/models/question'))();
 
 http.listen(port, () => {
   console.log(`Socket.IO server running at http://localhost:${port}/`);
+  question.getAllCategories((err, cat) => {});
+  question.getAllQuestionCards((err,cards) => {});
 });
-
-const connection = require('./src/config/dataAccess');
-
-// connection.query(
-//   'SELECT * FROM question_cards where que_id=7',
-//   function (err, results, fields) {
-//     console.log(results); // results contains rows returned by server
-//   }
-// );
 
 app.post('/create-player', (req, res) => {
   send(postCreatePlayer(req.body));
   res.status(201).end();
 });
-
 
 app.get('/list-rooms', (req, res) => {
   res.send(getRoomsAvailable());
@@ -153,8 +142,8 @@ io.on('connection', (socket) => {
   socket.on('start', (roomId) => {
     var room = findRoomById(roomId);
     if (room.players.length >= 2) {
-      StateMachine.start(room);
-      io.to(roomId).emit('question-categories', Question.getAllCategories());
+      stateMachine.start(room);
+      io.to(roomId).emit('question-categories', question.getAllCategories());
 
     } else {
       io.to(socket.id).emit('error', { code: 409, message: 'A sala não possui a quantidade minima de jogadores para iniciar a partida.' });
@@ -173,9 +162,9 @@ io.on('connection', (socket) => {
   });
 
   socket.on('new-question', (roomId, categoryId) => {
-    StateMachine.setQuestionTimer(QUESTION_INITIAL_TIMER_VALUE);
+    stateMachine.setQuestionTimer(QUESTION_INITIAL_TIMER_VALUE);
     var room = findRoomById(roomId);
-    room.question = Question.getOne(room, categoryId);
+    room.question = question.getOne(room, categoryId);
     room.answer = "";
 
     io.to(roomId).emit('new-question', room);
@@ -194,17 +183,17 @@ io.on('connection', (socket) => {
 
   socket.on('bet', (roomId, bet, upvote) => {
     var room = findRoomById(roomId);
-    StateMachine.bet(room, socket.id, bet, upvote);
+    stateMachine.bet(room, socket.id, bet, upvote);
   });
 
   socket.on('question-timer', (roomId) => {
     var couter = QUESTION_INITIAL_TIMER_VALUE;
     var timer = setInterval(function () {
-      if (couter <= 0 || StateMachine.answered) {//acesso direto ao atributo?
+      if (couter <= 0 || stateMachine.answered) {//acesso direto ao atributo?
         clearInterval(timer);
       }
       couter--;
-      StateMachine.setQuestionTimer(couter);
+      stateMachine.setQuestionTimer(couter);
       io.to(roomId).emit('timer-running', couter);
     }, 1000)
     io.to(roomId).emit('timer-running')//chamar um cronometro e emitir esse evento a cada segundo atualizando o front
@@ -212,15 +201,15 @@ io.on('connection', (socket) => {
 
   socket.on('answer', (roomId, questionId, answer, timer) => {
     var room = findRoomById(roomId);
-    var question = Question.findById(questionId, room.question.category);
-    io.to(roomId).emit('round-results', StateMachine.getResults(room, question, answer, timer))
+    var question = question.findById(questionId, room.question.category);
+    io.to(roomId).emit('round-results', stateMachine.getResults(room, question, answer, timer))
 
   });
 
   socket.on('time-over', (roomId) => {
     var room = findRoomById(roomId, questionId);
-    var question = Question.findById(questionId, room.question.category);
-    io.to(roomId).emit('round-results', StateMachine.getResults(room, question, 0, QUESTION_INITIAL_TIMER_VALUE))
+    var question = question.findById(questionId, room.question.category);
+    io.to(roomId).emit('round-results', stateMachine.getResults(room, question, 0, QUESTION_INITIAL_TIMER_VALUE))
   });
 
 })

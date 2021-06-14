@@ -1,28 +1,70 @@
-
-
-
-
-
+const repository = new (require('../data/repository'))();
 
 function Question() {
-    
-    //TODO: criar function a ser invocada ao subir o servidor trazendo todas as pergurntas do banco 
     var questionsC1 = [];
     var questionsC2 = [];
     var questionsC3 = [];
     var questionsC4 = [];
-    const questionCategories = [];
 
-    this.getAllCategories = () => {
-        return questionCategories;
-    }
+    var questionCategories = [];
+
+    this.getAllCategories = (error, success) => {
+
+        repository.getAllCategories((error, success) =>{
+            if(error)
+                return console.log('Falha ao buscar Categorias na base. Erro: ', error)
+            
+            questionCategories = success;
+            console.log("categories: ", questionCategories)
+            return questionCategories;
+        })
+    };
+
+    this.getAllQuestionCards = (error, success) => {
+
+        repository.getQuestionsByCategoryId('1', (error, success) => {
+            if (error)
+                return console.log('Falha ao buscar os Cards de Questao da base. Erro: ', error)
+
+            questionsC1 = success;
+            console.log("questions1: ",questionsC1);
+            return questionsC1;
+        });
+
+        repository.getQuestionsByCategoryId('2', (err, success) => {
+            if (err)
+                return console.log('Falha ao buscar os Cards de Questao da base')
+
+            questionsC2 = success;
+            console.log("questions2: ", questionsC2);
+            return questionsC2;
+        });
+
+        repository.getQuestionsByCategoryId('3', (err, success) => {
+            if (err)
+                return console.log('Falha ao buscar os Cards de Questao da base')
+
+            questionsC3 = success;
+            console.log("questions3: ", questionsC3);
+            return questionsC3;
+        });
+
+        repository.getQuestionsByCategoryId('4', (err, success) => {
+            if (err)
+                return console.log('Falha ao buscar os Cards de Questao da base')
+
+            questionsC4 = success;
+            console.log("questions4: ", questionsC4);
+            return questionsC4;
+        });
+    };
 
     this.getCategory = (categoryId = 0) => {
         if (categoryId === 0)
-            return questionsCategory[Math.floor(Math.random() * questionsCategory.length) + 1];
+            return questionCategories[Math.floor(Math.random() * questionCategories.length) + 1];
 
-        return questionsCategory[categoryId];
-    }
+        return questionCategories[categoryId];
+    };
 
     this.findById = (questionId, categoryId) => {
         var question;
@@ -42,7 +84,7 @@ function Question() {
         }
         return question;
 
-    }
+    };
 
     this.getOne = (room, categoryId = 0) => {
         var category = this.getCategory(categoryId);
@@ -90,7 +132,7 @@ function Question() {
                 break;
 
             default:
-            //TODO return error
+                console.log('categoria nao encontrada');
         }
         return {
             id: question.id,
@@ -101,8 +143,6 @@ function Question() {
             c: question.alternativeC,
             d: question.alternativeD,
         };
-    }
-
-
+    };
 }
 module.exports = Question;
