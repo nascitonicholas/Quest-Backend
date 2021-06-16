@@ -5,14 +5,28 @@ const http = require('http').Server(app);
 const { v4: uuidv4 } = require('uuid');
 const port = process.env.PORT || 8080;
 const frontDomain = 'http://localhost:3000';
+var cors = require('cors');
+
+/*Habilitando Cors*/
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Methods", 'GET,PUT,POST,DELETE');
+  app.use(cors());
+  next();
+});
+
 const io = require('socket.io')(http, {
   cors: {
     origin: frontDomain,
     methods: ["GET", "POST"]
   }
 });
+
 const stateMachine = new (require('./src/models/stateMachine'))();
 const question = new (require('./src/models/question'))();
+
+
+
 
 http.listen(port, () => {
   console.log(`Socket.IO server running at http://localhost:${port}/`);
