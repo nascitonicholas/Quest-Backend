@@ -11,6 +11,14 @@ const io = require('socket.io')(http, {
     methods: ["GET", "POST"]
   }
 });
+
+var cors = require('cors')
+
+app.use(cors())
+
+var bodyParser = require('body-parser')
+app.use(bodyParser.json())
+
 const stateMachine = new (require('./src/models/stateMachine'))();
 const question = new (require('./src/models/question'))();
 
@@ -21,7 +29,8 @@ http.listen(port, () => {
 });
 
 app.post('/create-player', (req, res) => {
-  send(postCreatePlayer(req.body));
+  console.log(req)
+  postCreatePlayer(req.body);
   res.status(201).end();
 });
 
@@ -41,21 +50,33 @@ const BET_INITIAL_TIMER_VALUE = 5;
 const NUMBER_OF_ROUNDS = 5  //Total de rounds por partida - ajustas conforme regra de negocio
 
 function postCreatePlayer(body) {
+  console.log(body)
   var player = {
     playerId: body.playerId,
     playerName: body.playerName,
   }
   players.push(player);
+  console.log('jogador criado com sucesso. ', player)
   return player;
 }
 
 function getRoomsAvailable() {
+  console.log('salas criadas: ' , rooms);
   if (!rooms)
-    return rooms;
+    return null;
 
-  return rooms.map(room => {
-    room.maxPlayers > (room.players.length && room.socketUp);
-  });
+  // var avaliableRooms = rooms.filter(()=>{
+  //   return (rooms.maxPlayers > rooms.players.length) && rooms.socketUp;
+  // })
+
+  var avaliableRooms = [];
+  rooms.forEach(x =>{
+    if(x.maxPlayers > x.players.length && x.socketUp){
+      avaliableRooms.push(x);
+    }
+  })
+
+  return avaliableRooms;
 }
 
 function createRoom(body) {
@@ -67,23 +88,26 @@ function createRoom(body) {
 
   var player = findPlayerById(body.playerId);
 
-  if (maxPlayer < 2 || maxPlayer > 4) {
-    return //TODO: retornar erro - quantidde de jogadores invalida 
+  if (request.maxPlayer < 2 || request.maxPlayer > 4) {
+    console.log("quantidade de jogadores invalida");
   }
   var room = {
     roomId: "room-" + uuidv4(),
-    roomName: room,
+    roomName: request.room,
     players: [player],
-    maxPlayers: maxPlayer,
+    maxPlayers: request.maxPlayer,
     socketUp: true
   }
   rooms.push(room);
+
+  console.log('Sala criada: ', room);
   return room;
 }
 
 function findPlayerById(playerId) {
   var player = players.find(x => x.playerId == playerId);
   if (!player) {
+    console.log('jogador nao encontrado');
     return null;//TODO: retornar erro - jogador nao encontrado 
   }
   return player;
@@ -92,6 +116,7 @@ function findPlayerById(playerId) {
 function findRoomById(roomId) {
   var room = rooms.find(x => x.roomId == roomId);
   if (!room) {
+    console.log('sala nao encontrada');
     return //TODO: retornar erro - sala nao encontrada 
   }
   return room;
