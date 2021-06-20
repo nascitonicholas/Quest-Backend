@@ -65,10 +65,6 @@ function getRoomsAvailable() {
   if (!rooms)
     return null;
 
-  // var avaliableRooms = rooms.filter(()=>{
-  //   return (rooms.maxPlayers > rooms.players.length) && rooms.socketUp;
-  // })
-
   var avaliableRooms = [];
   rooms.forEach(x =>{
     if(x.maxPlayers > x.players.length && x.socketUp){
